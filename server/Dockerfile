@@ -2,25 +2,10 @@ FROM continuumio/miniconda3:4.12.0
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+COPY local_requirements.txt requirements.txt
 
-RUN conda update conda --yes \ 
-    && conda config --add channels conda-forge \
-    && conda create --name app_env python=3.9 \
-    && conda install --yes --file requirements.txt
-
-# Some packages are not available in conda
 RUN pip install --upgrade pip
-RUN pip install Flask-PluginKit
-RUN pip install Flask-Session
-RUN pip install Flask-Migrate
-RUN pip install is-safe-url
-RUN pip install tensorflow==2.15.0
-RUN pip install tensorflow-recommenders==0.7.3
-RUN pip install python3-discogs-client
-RUN pip install cachelib
-#RUN pip install lenskit
-RUN pip install pytest
+RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
