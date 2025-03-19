@@ -113,145 +113,146 @@ class MLDataLoaderWrapper(DataLoaderBase):
         return []
     
 
+# Disabled for ndbi021 branch to avoid extra dependencies
 
-class GoodbooksDataLoader(DataLoaderBase):
+# class GoodbooksDataLoader(DataLoaderBase):
 
-    def __init__(self, **kwargs):
-        datasets_base_dir = os.path.join(get_abs_project_root_path(), 'static', 'datasets')
+#     def __init__(self, **kwargs):
+#         datasets_base_dir = os.path.join(get_abs_project_root_path(), 'static', 'datasets')
 
-        if not os.path.exists(datasets_base_dir):
-            assert False, f"Datasets base dir ({datasets_base_dir}) does not exist"
+#         if not os.path.exists(datasets_base_dir):
+#             assert False, f"Datasets base dir ({datasets_base_dir}) does not exist"
         
-        if not os.path.exists(os.path.join(datasets_base_dir, "ml-latest")):
-            assert False, f"ml-latest dataset is missing in the dataset base directory ({datasets_base_dir})"
+#         if not os.path.exists(os.path.join(datasets_base_dir, "ml-latest")):
+#             assert False, f"ml-latest dataset is missing in the dataset base directory ({datasets_base_dir})"
 
-        for f in ["ratings.csv", "movies.csv", "tags.csv", "links.csv", "img"]:
-            if not os.path.exists(os.path.join(datasets_base_dir, "ml-latest", f)):
-                assert False, f"{f} is missing in the {os.path.join(datasets_base_dir, 'ml-latest')} directory"
+#         for f in ["ratings.csv", "movies.csv", "tags.csv", "links.csv", "img"]:
+#             if not os.path.exists(os.path.join(datasets_base_dir, "ml-latest", f)):
+#                 assert False, f"{f} is missing in the {os.path.join(datasets_base_dir, 'ml-latest')} directory"
 
-        self.ratings_path = os.path.join(datasets_base_dir, "goodbooks-10k", "ratings.csv")
-        self.books_path = os.path.join(datasets_base_dir, "goodbooks-10k", "books.csv")
-        self.tags_path = os.path.join(datasets_base_dir, "goodbooks-10k", "tags.csv")
-        self.book_tags_path = os.path.join(datasets_base_dir, "goodbooks-10k", "book_tags.csv")
-        self.img_dir_path = os.path.join(datasets_base_dir, "goodbooks-10k", "img")
-        # Ensure img dir path exists
-        Path(self.img_dir_path).mkdir(parents=True, exist_ok=True)
+#         self.ratings_path = os.path.join(datasets_base_dir, "goodbooks-10k", "ratings.csv")
+#         self.books_path = os.path.join(datasets_base_dir, "goodbooks-10k", "books.csv")
+#         self.tags_path = os.path.join(datasets_base_dir, "goodbooks-10k", "tags.csv")
+#         self.book_tags_path = os.path.join(datasets_base_dir, "goodbooks-10k", "book_tags.csv")
+#         self.img_dir_path = os.path.join(datasets_base_dir, "goodbooks-10k", "img")
+#         # Ensure img dir path exists
+#         Path(self.img_dir_path).mkdir(parents=True, exist_ok=True)
 
-    def load_data(self):
-        #cache_path = os.path.join(basedir, "static", "ml-latest", "data_cache.pckl")
-        start_time = time.perf_counter()
+#     def load_data(self):
+#         #cache_path = os.path.join(basedir, "static", "ml-latest", "data_cache.pckl")
+#         start_time = time.perf_counter()
 
-        self._ratings_df = pd.read_csv(self.ratings_path)
-        self.books_df = pd.read_csv(self.books_path)
-        self.tags_df = pd.read_csv(self.tags_path)
-        self.book_tags_df = pd.read_csv(self.book_tags_path)
+#         self._ratings_df = pd.read_csv(self.ratings_path)
+#         self.books_df = pd.read_csv(self.books_path)
+#         self.tags_df = pd.read_csv(self.tags_path)
+#         self.book_tags_df = pd.read_csv(self.book_tags_path)
 
-        self._ratings_df = self._ratings_df[self._ratings_df.rating >= 4]
-        self._ratings_df = self._ratings_df[self._ratings_df.book_id.map(self._ratings_df.book_id.value_counts()) >= 400]
-        self._ratings_df = self._ratings_df[self._ratings_df.user_id.map(self._ratings_df.user_id.value_counts()) >= 75]
-        self._ratings_df = self._ratings_df.reset_index(drop=True)
+#         self._ratings_df = self._ratings_df[self._ratings_df.rating >= 4]
+#         self._ratings_df = self._ratings_df[self._ratings_df.book_id.map(self._ratings_df.book_id.value_counts()) >= 400]
+#         self._ratings_df = self._ratings_df[self._ratings_df.user_id.map(self._ratings_df.user_id.value_counts()) >= 75]
+#         self._ratings_df = self._ratings_df.reset_index(drop=True)
 
-        self.books_df = self.books_df[self.books_df.book_id.isin(self._ratings_df.book_id)]
-        self.books_df = self.books_df.reset_index(drop=True)
+#         self.books_df = self.books_df[self.books_df.book_id.isin(self._ratings_df.book_id)]
+#         self.books_df = self.books_df.reset_index(drop=True)
 
-        #self._ratings_df.merge(self.books_df[["book_id", "title"]])
+#         #self._ratings_df.merge(self.books_df[["book_id", "title"]])
 
-        self.book_tags_df = pd.read_csv(self.book_tags_path)
-        self.book_tags_df = self.book_tags_df.reset_index(drop=True)
+#         self.book_tags_df = pd.read_csv(self.book_tags_path)
+#         self.book_tags_df = self.book_tags_df.reset_index(drop=True)
 
-        self.book_index_to_id = pd.Series(self.books_df.book_id.values,index=self.books_df.index).to_dict()
-        self.book_id_to_index = pd.Series(self.books_df.index,index=self.books_df.book_id.values).to_dict()
+#         self.book_index_to_id = pd.Series(self.books_df.book_id.values,index=self.books_df.index).to_dict()
+#         self.book_id_to_index = pd.Series(self.books_df.index,index=self.books_df.book_id.values).to_dict()
 
-        self.books_df = self.books_df.rename(columns={"book_id": "item_id"})
-        self.books_df_indexed = self.books_df.set_index("item_id")
+#         self.books_df = self.books_df.rename(columns={"book_id": "item_id"})
+#         self.books_df_indexed = self.books_df.set_index("item_id")
         
-        self.books_df.loc[:, "description"] = self.books_df.title # + ' ' + self.books_df.genres
-        self.book_index_to_description = dict(zip(self.books_df.index, self.books_df.description))
+#         self.books_df.loc[:, "description"] = self.books_df.title # + ' ' + self.books_df.genres
+#         self.book_index_to_description = dict(zip(self.books_df.index, self.books_df.description))
         
 
-        already_downloaded = [] if not os.path.exists(self.img_dir_path) else os.listdir(self.img_dir_path)
-        self.book_index_to_url = dict()
-        for img_name in already_downloaded:
-            book_id = int(img_name.split(".jpg")[0])
-            if book_id in self.book_id_to_index: # It could be possible we have more images than books (due to filtering)
-                self.book_index_to_url[self.book_id_to_index[book_id]] = os.path.join(self.img_dir_path, img_name)
+#         already_downloaded = [] if not os.path.exists(self.img_dir_path) else os.listdir(self.img_dir_path)
+#         self.book_index_to_url = dict()
+#         for img_name in already_downloaded:
+#             book_id = int(img_name.split(".jpg")[0])
+#             if book_id in self.book_id_to_index: # It could be possible we have more images than books (due to filtering)
+#                 self.book_index_to_url[self.book_id_to_index[book_id]] = os.path.join(self.img_dir_path, img_name)
 
-        print(f"## Loading took: {time.perf_counter() - start_time}")
-        self._ratings_df = self._ratings_df.rename(columns={"user_id": "user", "book_id": "item_id"})
-        self._ratings_df.loc[:, "item"] = self._ratings_df.item_id.map(lambda x: self.book_id_to_index[x])
-        # TODO remove "movie" in column names to "item"
+#         print(f"## Loading took: {time.perf_counter() - start_time}")
+#         self._ratings_df = self._ratings_df.rename(columns={"user_id": "user", "book_id": "item_id"})
+#         self._ratings_df.loc[:, "item"] = self._ratings_df.item_id.map(lambda x: self.book_id_to_index[x])
+#         # TODO remove "movie" in column names to "item"
 
-    # Returns dataframe with the interactions/ratings (be aware that implicit feedback is now considered)
-    # There should be "user" and "item" columns in the dataframe
-    @property
-    def ratings_df(self):
-        return self._ratings_df
+#     # Returns dataframe with the interactions/ratings (be aware that implicit feedback is now considered)
+#     # There should be "user" and "item" columns in the dataframe
+#     @property
+#     def ratings_df(self):
+#         return self._ratings_df
 
-    @property
-    def items_df(self):
-        return self.books_df
+#     @property
+#     def items_df(self):
+#         return self.books_df
 
-    @property
-    def items_df_indexed(self):
-        return self.books_df_indexed
+#     @property
+#     def items_df_indexed(self):
+#         return self.books_df_indexed
 
-    def get_item_id_image_url(self, item_id):
-        return self.get_item_index_image_url(self.get_item_index(item_id))
+#     def get_item_id_image_url(self, item_id):
+#         return self.get_item_index_image_url(self.get_item_index(item_id))
     
-    def get_item_index_image_url(self, item_index):
-        if self.img_dir_path and has_app_context():
-            if item_index not in self.book_index_to_url:
-                # Download it first if it is missing
-                book_id = self.book_index_to_id[item_index]
-                remote_url = self.books_df_indexed.loc[book_id].image_url
+#     def get_item_index_image_url(self, item_index):
+#         if self.img_dir_path and has_app_context():
+#             if item_index not in self.book_index_to_url:
+#                 # Download it first if it is missing
+#                 book_id = self.book_index_to_id[item_index]
+#                 remote_url = self.books_df_indexed.loc[book_id].image_url
                 
-                err = False
-                try:
-                    resp = requests.get(remote_url, stream=True)
-                except:
-                    err = True
+#                 err = False
+#                 try:
+#                     resp = requests.get(remote_url, stream=True)
+#                 except:
+#                     err = True
 
-                if err or resp.status_code != 200:
-                    print(f"Failed download image for book with id={book_id}")
-                else:
-                    img = Image.open(BytesIO(resp.content))
-                    width, height = img.size
-                    TARGET_WIDTH = 200
-                    coef = TARGET_WIDTH / width
-                    new_height = int(height * coef)
-                    img = img.resize((TARGET_WIDTH, new_height), Image.LANCZOS).convert('RGB')
-                    img.save(os.path.join(self.img_dir_path, f'{book_id}.jpg'), quality=90)
+#                 if err or resp.status_code != 200:
+#                     print(f"Failed download image for book with id={book_id}")
+#                 else:
+#                     img = Image.open(BytesIO(resp.content))
+#                     width, height = img.size
+#                     TARGET_WIDTH = 200
+#                     coef = TARGET_WIDTH / width
+#                     new_height = int(height * coef)
+#                     img = img.resize((TARGET_WIDTH, new_height), Image.LANCZOS).convert('RGB')
+#                     img.save(os.path.join(self.img_dir_path, f'{book_id}.jpg'), quality=90)
 
-            # Use local version of images
-            item_id = self.book_index_to_id[item_index]
-            return url_for('static', filename=f'datasets/goodbooks-10k/img/{item_id}.jpg')
+#             # Use local version of images
+#             item_id = self.book_index_to_id[item_index]
+#             return url_for('static', filename=f'datasets/goodbooks-10k/img/{item_id}.jpg')
 
-        return self.book_index_to_url[item_index]
+#         return self.book_index_to_url[item_index]
 
-    def get_item_index(self, item_id):
-        return self.book_id_to_index[item_id]
+#     def get_item_index(self, item_id):
+#         return self.book_id_to_index[item_id]
 
-    def get_item_id(self, item_index):
-        return self.book_index_to_id[item_index]
+#     def get_item_id(self, item_index):
+#         return self.book_index_to_id[item_index]
 
-    def get_item_index_description(self, item_index):
-        return self.book_index_to_description[item_index]
+#     def get_item_index_description(self, item_index):
+#         return self.book_index_to_description[item_index]
 
-    def get_item_id_description(self, item_id):
-        return self.get_item_index_description(self.get_item_index(item_id))
+#     def get_item_id_description(self, item_id):
+#         return self.get_item_index_description(self.get_item_index(item_id))
 
-    # For a given item index, return list of its categories
-    def get_item_index_categories(self, item_index):
-        assert False, "Not implemented"
+#     # For a given item index, return list of its categories
+#     def get_item_index_categories(self, item_index):
+#         assert False, "Not implemented"
 
-    # Return all available categories in the dataset
-    def get_all_categories(self):
-        assert False, "Not implemented"
+#     # Return all available categories in the dataset
+#     def get_all_categories(self):
+#         assert False, "Not implemented"
 
-    @classmethod
-    def name(self):
-        return "Goodbooks-10k dataset"
+#     @classmethod
+#     def name(self):
+#         return "Goodbooks-10k dataset"
 
-    @classmethod
-    def parameters(self):
-        return []
+#     @classmethod
+#     def parameters(self):
+#         return []

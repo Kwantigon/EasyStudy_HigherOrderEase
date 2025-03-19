@@ -2,7 +2,6 @@ from abc import ABC
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 from plugins.fastcompare.algo.algorithm_base import (
     AlgorithmBase,
     Parameter,
@@ -40,16 +39,20 @@ class EASE(AlgorithmBase, ABC):
 
     # One-time fitting of the algorithm for a predefined number of iterations
     def fit(self):
-        X = tf.convert_to_tensor(
-            np.where(self._rating_matrix >= self._threshold, 1, 0), dtype=tf.float32
-        )
-        G = tf.transpose(X) @ X
-        G += self._l2 * tf.linalg.tensor_diag([1.0 for _ in range(self._items_count)])
+        X = np.where(self._rating_matrix >= self._threshold, 1, 0).astype(np.float32)
 
-        P = tf.linalg.inv(G)
+        # Compute Gram matrix (G = X^T @ X)
+        G = X.T @ X
+        G += self._l2 * np.eye(self._items_count)  # Regularization
 
-        B = P / (-tf.linalg.tensor_diag_part(P))
-        B = tf.linalg.set_diag(B, tf.zeros(B.shape[0]))
+        # Compute the inverse of G
+        P = np.linalg.inv(G)
+
+        # Compute B matrix
+        diag_P = np.diag(P)
+        B = P / (-diag_P[:, None])  # Normalize rows by diagonal elements
+        np.fill_diagonal(B, 0)  # Set diagonal to zero
+
         self._weights = B
 
     # Predict for the user
@@ -63,13 +66,11 @@ class EASE(AlgorithmBase, ABC):
             # to avoid empty recommendation, we just sample random candidates
             return np.random.choice(candidates, size=k, replace=False).tolist()
         indices = list(selected_items)
-        user_vector = np.zeros((self._items_count,))
+        user_vector = np.zeros((self._items_count,), dtype=np.float32)
         for i in indices:
             user_vector[i] = 1.0
 
-        preds = tf.tensordot(
-            tf.convert_to_tensor(user_vector, dtype=tf.float32), self._weights, 1
-        ).numpy()
+        preds = np.dot(user_vector, self._weights)
 
         candidates_by_prob = sorted(
             ((preds[cand], cand) for cand in candidates), reverse=True

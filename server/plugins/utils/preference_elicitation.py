@@ -11,17 +11,17 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import pickle
 
-
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU') # Disable GPU because of adagrad issues
-# tf.random.set_seed(42)
-# np.random.seed(42)
-# random.seed(42)
+# Disabled for ndbi021 branch to avoid dependency on tensorflow
+# import tensorflow as tf
+# tf.config.set_visible_devices([], 'GPU') # Disable GPU because of adagrad issues
+# # tf.random.set_seed(42)
+# # np.random.seed(42)
+# # random.seed(42)
 
 
 from popularity_sampling import PopularitySamplingElicitation, PopularitySamplingFromBucketsElicitation
 from multi_obj_sampling import MultiObjectiveSamplingFromBucketsElicitation
-from tfrs_model import get_model_mf
+# from tfrs_model import get_model_mf
 
 import time
 from sklearn.preprocessing import QuantileTransformer
@@ -82,57 +82,57 @@ def compute_once(func):
         return result
     return wrapper
 
-@compute_once
-def prepare_tf_data(loader):
-    ratings_df = loader.ratings_df.copy()
+# @compute_once
+# def prepare_tf_data(loader):
+#     ratings_df = loader.ratings_df.copy()
 
-    # Add item_title
-    ratings_df.loc[:, "item_title"] = ratings_df.movieId.map(loader.movies_df_indexed.title)
+#     # Add item_title
+#     ratings_df.loc[:, "item_title"] = ratings_df.movieId.map(loader.movies_df_indexed.title)
 
-    # Rename column and cast to string
-    ratings_df = ratings_df.rename(columns={"userId": "user_id"})
-    ratings_df.user_id = ratings_df.user_id.astype(str)
+#     # Rename column and cast to string
+#     ratings_df = ratings_df.rename(columns={"userId": "user_id"})
+#     ratings_df.user_id = ratings_df.user_id.astype(str)
 
-    ratings = tf.data.Dataset.from_tensor_slices(dict(ratings_df[["user_id", "item_title"]]))
-    movies = tf.data.Dataset.from_tensor_slices(dict(loader.movies_df.rename(columns={"title": "item_title"})[["item_title"]])).map(lambda x: x["item_title"])
+#     ratings = tf.data.Dataset.from_tensor_slices(dict(ratings_df[["user_id", "item_title"]]))
+#     movies = tf.data.Dataset.from_tensor_slices(dict(loader.movies_df.rename(columns={"title": "item_title"})[["item_title"]])).map(lambda x: x["item_title"])
 
-    import numpy as np
-    tf.random.set_seed(42)
-    shuffled = ratings.shuffle(100_000, seed=42, reshuffle_each_iteration=False)
+#     import numpy as np
+#     tf.random.set_seed(42)
+#     shuffled = ratings.shuffle(100_000, seed=42, reshuffle_each_iteration=False)
 
-    train_size = int(ratings_df.shape[0] * 0.85)
+#     train_size = int(ratings_df.shape[0] * 0.85)
 
-    # Take everything as train
-    train = shuffled
+#     # Take everything as train
+#     train = shuffled
 
-    movie_titles = movies.batch(1_000)
-    user_ids = ratings.batch(1_000_000).map(lambda x: x["user_id"])
+#     movie_titles = movies.batch(1_000)
+#     user_ids = ratings.batch(1_000_000).map(lambda x: x["user_id"])
 
-    unique_movie_titles = np.unique(np.concatenate(list(movie_titles)))
-    unique_user_ids = np.unique(np.concatenate(list(user_ids)))
+#     unique_movie_titles = np.unique(np.concatenate(list(movie_titles)))
+#     unique_user_ids = np.unique(np.concatenate(list(user_ids)))
 
-    new_user = str(max([int(x) for x in unique_user_ids]) + 1)
-    unique_user_ids = np.concatenate([unique_user_ids, np.array([new_user])])
+#     new_user = str(max([int(x) for x in unique_user_ids]) + 1)
+#     unique_user_ids = np.concatenate([unique_user_ids, np.array([new_user])])
 
-    cached_train = train.shuffle(100_000).batch(8192).cache()
+#     cached_train = train.shuffle(100_000).batch(8192).cache()
 
-    return unique_user_ids, unique_movie_titles, movies, cached_train, train
+#     return unique_user_ids, unique_movie_titles, movies, cached_train, train
 
-def prepare_tf_model(loader):
+# def prepare_tf_model(loader):
 
-    unique_user_ids, unique_movie_titles, movies, cached_train, train = prepare_tf_data(loader)
-    model = get_model_mf(unique_user_ids, unique_movie_titles, movies)
-    #cache_path = os.path.join(Path(__file__).parent.absolute(), 'cache', 'utils', 'ml-latest', 'tf_weights_cache')
-    cache_path = os.path.join(get_abs_project_root_path(), 'cache', 'utils', 'ml-latest', 'tf_weights_cache')
+#     unique_user_ids, unique_movie_titles, movies, cached_train, train = prepare_tf_data(loader)
+#     model = get_model_mf(unique_user_ids, unique_movie_titles, movies)
+#     #cache_path = os.path.join(Path(__file__).parent.absolute(), 'cache', 'utils', 'ml-latest', 'tf_weights_cache')
+#     cache_path = os.path.join(get_abs_project_root_path(), 'cache', 'utils', 'ml-latest', 'tf_weights_cache')
 
-    # Try load
-    try:
-        model.load_weights(cache_path)
-    except tf.errors.NotFoundError as ex:
-        model.fit(cached_train, epochs=5)
-        model.save_weights(cache_path)
+#     # Try load
+#     try:
+#         model.load_weights(cache_path)
+#     except tf.errors.NotFoundError as ex:
+#         model.fit(cached_train, epochs=5)
+#         model.save_weights(cache_path)
 
-    return model, train
+#     return model, train
 
 def load_data(loader, elicitation, elicitation_movies):
     data = elicitation.get_initial_data([int(x["movie_idx"]) for x in elicitation_movies])
@@ -301,44 +301,45 @@ def enrich_results(top_k, loader):
     return [{"movie": movie, "url": url, "movie_idx": str(movie_idx), "movie_id": movie_id, "genres": genres} for movie, url, movie_idx, movie_id, genres in zip(top_k_description, top_k_url, top_k, top_k_ids, top_k_genres)]
 
 def prepare_wrapper(selected_movies, model, mandate_allocation_factory, obj_weights, filter_out_movies = [], k=10):
-    loader, items, distance_matrix, users_viewed_item, movie_title_to_idx = prepare_wrapper_once()
+    assert False, 'Disabled on ndbi021 branch to remove dependency on tensorflow'
+    # loader, items, distance_matrix, users_viewed_item, movie_title_to_idx = prepare_wrapper_once()
 
-    max_user = loader.ratings_df.userId.max()
-    new_user = tf.constant(str(max_user + 1))
+    # max_user = loader.ratings_df.userId.max()
+    # new_user = tf.constant(str(max_user + 1))
     
-    # We want to reuse the relevance based model instead
-    # model, train = prepare_tf_model(loader)
+    # # We want to reuse the relevance based model instead
+    # # model, train = prepare_tf_model(loader)
     
-    seen_movies_tensor = tf.stack(
-        [tf.constant(loader.movies_df.loc[x].title) for x in selected_movies]
-        +
-        [tf.constant(loader.movies_df.loc[x].title) for x in filter_out_movies]
-    )
-    scores, x = model.predict_all_unseen(new_user, seen_movies_tensor, n_items=items.size) #model.predict_for_user(new_user, ratings2, k=2000)
-    scores, x = tf.squeeze(scores).numpy(), tf.squeeze(x).numpy()
-    scores = (scores - scores.min()) / (scores.max() - scores.min())
-    top_k = [movie_title_to_idx[t] for t in x]
+    # seen_movies_tensor = tf.stack(
+    #     [tf.constant(loader.movies_df.loc[x].title) for x in selected_movies]
+    #     +
+    #     [tf.constant(loader.movies_df.loc[x].title) for x in filter_out_movies]
+    # )
+    # scores, x = model.predict_all_unseen(new_user, seen_movies_tensor, n_items=items.size) #model.predict_for_user(new_user, ratings2, k=2000)
+    # scores, x = tf.squeeze(scores).numpy(), tf.squeeze(x).numpy()
+    # scores = (scores - scores.min()) / (scores.max() - scores.min())
+    # top_k = [movie_title_to_idx[t] for t in x]
 
     
-    rating_vector = np.zeros((items.size, ), dtype=np.float32)
-    rating_vector[top_k] = scores # Set the predicted scores
-    rating_vector[selected_movies] = 1.0 # Set selected movies to 1.0
-    rating_vector = np.expand_dims(rating_vector, axis=0) # Convert it to 1xN rating matrix
-    extended_rating_matrix = rating_vector #loader.rating_matrix[:1] #rating_vector
+    # rating_vector = np.zeros((items.size, ), dtype=np.float32)
+    # rating_vector[top_k] = scores # Set the predicted scores
+    # rating_vector[selected_movies] = 1.0 # Set selected movies to 1.0
+    # rating_vector = np.expand_dims(rating_vector, axis=0) # Convert it to 1xN rating matrix
+    # extended_rating_matrix = rating_vector #loader.rating_matrix[:1] #rating_vector
 
-    normalization_factory = cdf
-    cache_dir = None #"."
+    # normalization_factory = cdf
+    # cache_dir = None #"."
 
-    mandate_allocation = mandate_allocation_factory(obj_weights, -1e6)
+    # mandate_allocation = mandate_allocation_factory(obj_weights, -1e6)
     
-    unseen_items_mask = np.ones(extended_rating_matrix.shape, dtype=np.bool8)
-    if filter_out_movies:
-        unseen_items_mask[:, np.array(filter_out_movies)] = 0 # Mask out the items
+    # unseen_items_mask = np.ones(extended_rating_matrix.shape, dtype=np.bool8)
+    # if filter_out_movies:
+    #     unseen_items_mask[:, np.array(filter_out_movies)] = 0 # Mask out the items
 
-    discount_sequences = [[1.0] * k, [1.0] * k, [1.0] * k]
+    # discount_sequences = [[1.0] * k, [1.0] * k, [1.0] * k]
 
-    n_users = loader.rating_matrix.shape[0] # Calculate number of users on the full rating matrix not just on the single user vector
-    return loader, RLPropWrapper(items, extended_rating_matrix, distance_matrix, users_viewed_item, normalization_factory, mandate_allocation, unseen_items_mask, cache_dir, discount_sequences, n_users)
+    # n_users = loader.rating_matrix.shape[0] # Calculate number of users on the full rating matrix not just on the single user vector
+    # return loader, RLPropWrapper(items, extended_rating_matrix, distance_matrix, users_viewed_item, normalization_factory, mandate_allocation, unseen_items_mask, cache_dir, discount_sequences, n_users)
 
 def rlprop(selected_movies, model, weights, filter_out_movies = [], k=10):
     obj_weights = weights
@@ -373,44 +374,46 @@ def weighted_average(selected_movies, model, weights, filter_out_movies = [], k=
 
 
 def recommend_2_3(selected_movies, filter_out_movies = [], return_model = False, k = 10):
-    loader = load_ml_dataset()
+    assert False, 'Disabled on ndbi021 branch to remove dependency on tensorflow'
 
-    max_user = loader.ratings_df.userId.max()
+    # loader = load_ml_dataset()
 
-    ################ TF specific ################
-    model, train = prepare_tf_model(loader)
+    # max_user = loader.ratings_df.userId.max()
+
+    # ################ TF specific ################
+    # model, train = prepare_tf_model(loader)
 
     
-    new_user = tf.constant(str(max_user + 1))
-    def data_gen():
-        for x in selected_movies:
-            yield {
-                "item_title": tf.constant(loader.movies_df.loc[x].title),
-                "user_id": new_user,
-            }
-    ratings2 = tf.data.Dataset.from_generator(data_gen, output_signature={
-        "item_title": tf.TensorSpec(shape=(), dtype=tf.string),
-        "user_id": tf.TensorSpec(shape=(), dtype=tf.string)
-    })
+    # new_user = tf.constant(str(max_user + 1))
+    # def data_gen():
+    #     for x in selected_movies:
+    #         yield {
+    #             "item_title": tf.constant(loader.movies_df.loc[x].title),
+    #             "user_id": new_user,
+    #         }
+    # ratings2 = tf.data.Dataset.from_generator(data_gen, output_signature={
+    #     "item_title": tf.TensorSpec(shape=(), dtype=tf.string),
+    #     "user_id": tf.TensorSpec(shape=(), dtype=tf.string)
+    # })
 
 
 
-    # Finetune
-    model.fit(ratings2.concatenate(train.take(100)).batch(256), epochs=2)
+    # # Finetune
+    # model.fit(ratings2.concatenate(train.take(100)).batch(256), epochs=2)
 
-    seen_movies_tensor = tf.stack(
-        [tf.constant(loader.movies_df.loc[x].title) for x in selected_movies]
-        +
-        [tf.constant(loader.movies_df.loc[x].title) for x in filter_out_movies]
-    )
-    predictions = tf.squeeze(model.predict_for_user(new_user, seen_movies_tensor, k)).numpy()
+    # seen_movies_tensor = tf.stack(
+    #     [tf.constant(loader.movies_df.loc[x].title) for x in selected_movies]
+    #     +
+    #     [tf.constant(loader.movies_df.loc[x].title) for x in filter_out_movies]
+    # )
+    # predictions = tf.squeeze(model.predict_for_user(new_user, seen_movies_tensor, k)).numpy()
     
-    top_k = [loader.movie_id_to_index[loader.movies_df[loader.movies_df.title == x.decode("UTF-8")].movieId.values[0]] for x in predictions]
+    # top_k = [loader.movie_id_to_index[loader.movies_df[loader.movies_df.title == x.decode("UTF-8")].movieId.values[0]] for x in predictions]
 
-    if return_model:
-        return enrich_results(top_k, loader), model
+    # if return_model:
+    #     return enrich_results(top_k, loader), model
 
-    return enrich_results(top_k, loader)
+    # return enrich_results(top_k, loader)
 
 # Takes rating matrix and returns dense copy
 def gen_dense_rating_matrix(rating_matrix):
