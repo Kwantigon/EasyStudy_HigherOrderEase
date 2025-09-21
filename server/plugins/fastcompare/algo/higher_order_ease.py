@@ -181,7 +181,7 @@ class HigherOrderEASE(AlgorithmBase, ABC):
 			A = XtZC.copy()
 			A[np.arange(num_items), np.arange(num_items)] -= diag_eta  # A = XtZC - diag(η)
 			self._B = I_n - P.dot(A)
-			
+
 			# Floating-point round-off can bleed tiny values onto the diagonal.
 			# Enforce the EASE constraint by setting 0.
 			np.fill_diagonal(self._B, 0.0)
@@ -191,12 +191,21 @@ class HigherOrderEASE(AlgorithmBase, ABC):
 		self._B = self._B.astype(np.float32)
 
 	def predict(self, selected_items, filter_out_items, k):
+		# Trained matrices B and C.
+		# Predictions are: scores(u) = xu​B + zu​C
+		# xu: user’s binarized items.
+		# zu: user’s active pairs (1 if the user has both items of that pair, else 0).
+		# B: weights from EASE.
+		# C: higher-order weights.
+
 		user_vector = np.zeros((self._items_count,), dtype=np.float32)
 		for i in selected_items:
 			user_vector[i] = 1.0
 
+		# xuB
 		preds = user_vector.dot(self._B)
 
+		# Add zuC
 		if self._C is not None and self._C.shape[0] > 0 and len(selected_items) >= 2:
 			active_pairs = []
 			for i, j in combinations(selected_items, 2):
