@@ -3,22 +3,24 @@ import time
 import numpy as np
 from plugins.fastcompare.algo.ease import EASE
 from plugins.fastcompare.algo.wrappers.data_loadering import MLDataLoaderWrapper
-from plugins.fastcompare.algo.higher_order_ease import HOEASE_NoADMM
+from plugins.fastcompare.algo.higher_order_ease import HigherOrderEASE
 
 import pytest
 
 from plugins.fastcompare import filter_params
 
 tested_algorithm_combinations = [
-	(EASE, {"displayed_name": "Something", "positive_threshold": 3.0, "l2": 0.01}),
+	(EASE, {"displayed_name": "EASE", "positive_threshold": 3.0, "l2": 0.01}),
 	# Add more parameter combinations if needed (e.g. add your algorithm implementation)
-	(HOEASE_NoADMM, {
-		"displayed_name": "HOEASE",
+	(HigherOrderEASE, {
+		"displayed_name": "Higher-order EASE",
 		"l2": 0.1,
 		"lambda_c": 0.1,
 		"positive_threshold": 3.0,
 		"min_support": 500,
-		"max_pairs": 20,
+		"max_pairs": 5,
+		"rho": 1.0,
+		"admm_iters": 30
 	}),
 ]
 
