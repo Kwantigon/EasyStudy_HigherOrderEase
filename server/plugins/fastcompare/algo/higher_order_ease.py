@@ -28,7 +28,7 @@ class HigherOrderEASE(AlgorithmBase, ABC):
 		min_support=500,
 		max_pairs=10,
 		rho=1.0,
-		admm_iters=30,
+		admm_iters=20,
 		**kwargs,
 	):
 		self._ratings_df = loader.ratings_df
@@ -219,6 +219,6 @@ class HigherOrderEASE(AlgorithmBase, ABC):
 			Parameter("min_support", ParameterType.INT, 500, help="Minimum support for a pair"),
 			Parameter("max_pairs", ParameterType.INT, 10, help="Optional cap on number of pairs"),
 			Parameter("rho", ParameterType.FLOAT, 1.0, help="ADMM penalty parameter"),
-			Parameter("admm_iters", ParameterType.INT, 5, help="Number of ADMM iterations"),
+			Parameter("admm_iters", ParameterType.INT, 20, help="Number of ADMM iterations"),
 		]
 	
